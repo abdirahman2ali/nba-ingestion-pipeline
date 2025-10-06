@@ -225,7 +225,7 @@ def get_all_players_career_data(save_to_db=True, table_name="player_season_stats
 
 def get_all_players_all_seasons(per_mode="PerGame", save_to_db=True, table_name="player_season_stats"):
     """
-    Fetch all players' stats for all seasons and optionally save to PostgreSQL.
+    Fetch all players' stats for all seasons.
     
     Args:
         per_mode (str): Stats mode - "PerGame", "Totals", "Per36", etc.
@@ -302,18 +302,10 @@ def main():
     print(f"Database: {DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}")
     
     # Choose which data to fetch:
-    # Option 1: Complete career data for all players (recommended)
     df = get_all_players_career_data(
         save_to_db=True,
         table_name="player_season_stats"
     )
-    
-    # Option 2: League-wide stats per season (alternative)
-    # df = get_all_players_all_seasons(
-    #     per_mode="PerGame",
-    #     save_to_db=True,
-    #     table_name="player_season_stats"
-    # )
     
     print("NBA data ingestion completed!")
     return df
