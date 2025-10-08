@@ -23,6 +23,7 @@
 Every player's per-game season averages: points, rebounds, assists, steals, blocks, FG%, 3PT%, FT%, and more. Season-level aggregates from 1947 to present day.
 
 **Data includes:**
+- **Player ID** (unique Basketball Reference identifier - e.g., "jamesle01")
 - Player name, position, age, team
 - Games played (GP), games started (GS), minutes per game
 - Shooting stats (FG, FGA, FG%, 3P, 3PA, 3P%, 2P, 2PA, 2P%, eFG%)
@@ -42,7 +43,8 @@ Every player's per-game season averages: points, rebounds, assists, steals, bloc
 **PostgreSQL table**: `nba.player_season_averages`
 - 30,462+ records (1950-2025)
 - 4,775+ unique players
-- Indexed by player and season for fast queries
+- Unique player_id for tracking players across seasons
+- Indexed by player_id, season, and combinations for fast queries
 
 ## 🛠️ Tech Stack
 

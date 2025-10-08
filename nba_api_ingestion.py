@@ -99,7 +99,7 @@ def get_season_stats(season_end_year, data_format='PER_GAME'):
         data_format: Type of stats ('PER_GAME', 'TOTALS', 'PER_36MIN', 'PER_100POSS', 'ADVANCED')
     
     Returns:
-        DataFrame with all players' stats for that season
+        DataFrame with all players' stats for that season, including player_id
     """
     format_map = {
         'PER_GAME': 'per_game',
@@ -125,6 +125,27 @@ def get_season_stats(season_end_year, data_format='PER_GAME'):
         if not table:
             return pd.DataFrame()
         
+        # Extract player IDs from the href links before reading table
+        player_ids = []
+        player_rows = table.find('tbody').find_all('tr')
+        
+        for row in player_rows:
+            # Find player link in the row - try 'name_display' first (newer format), then 'player' (older format)
+            player_cell = row.find('td', {'data-stat': 'name_display'})
+            if not player_cell:
+                player_cell = row.find('td', {'data-stat': 'player'})
+            
+            if player_cell and player_cell.find('a'):
+                href = player_cell.find('a').get('href', '')
+                # Extract player_id from URL like /players/j/jamesle01.html
+                if href:
+                    player_id = href.split('/')[-1].replace('.html', '')
+                    player_ids.append(player_id)
+                else:
+                    player_ids.append(None)
+            else:
+                player_ids.append(None)
+        
         # Read table into DataFrame
         df = pd.read_html(str(table))[0]
         
@@ -138,6 +159,13 @@ def get_season_stats(season_end_year, data_format='PER_GAME'):
         
         df = df.reset_index(drop=True)
         
+        # Add player_id column (match the cleaned dataframe length)
+        if len(player_ids) >= len(df):
+            df.insert(0, 'PLAYER_ID', player_ids[:len(df)])
+        else:
+            # If mismatch, fill with None
+            df.insert(0, 'PLAYER_ID', [player_ids[i] if i < len(player_ids) else None for i in range(len(df))])
+        
         return df
         
     except Exception as e:
@@ -148,6 +176,7 @@ def create_table_if_not_exists(engine, table_name="player_season_averages"):
     create_table_sql = f"""
     CREATE TABLE IF NOT EXISTS nba.{table_name} (
         id SERIAL PRIMARY KEY,
+        player_id VARCHAR(50),
         player VARCHAR(255),
         age DECIMAL(5,2),
         team VARCHAR(10),
@@ -182,6 +211,8 @@ def create_table_if_not_exists(engine, table_name="player_season_averages"):
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     
+    CREATE INDEX IF NOT EXISTS idx_player_id ON nba.{table_name}(player_id);
+    CREATE INDEX IF NOT EXISTS idx_player_id_season ON nba.{table_name}(player_id, season);
     CREATE INDEX IF NOT EXISTS idx_player_season ON nba.{table_name}(player, season);
     CREATE INDEX IF NOT EXISTS idx_season ON nba.{table_name}(season);
     """
