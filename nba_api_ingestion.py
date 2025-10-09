@@ -172,7 +172,7 @@ def get_season_stats(season_end_year, data_format='PER_GAME'):
         raise Exception(f"Error fetching data for {season_end_year}: {str(e)}")
 
 def create_table_if_not_exists(engine, table_name="player_season_averages"):
-    """Create the player season averages table if it doesn't exist."""
+    """Create the player season totals table if it doesn't exist."""
     create_table_sql = f"""
     CREATE TABLE IF NOT EXISTS nba.{table_name} (
         id SERIAL PRIMARY KEY,
@@ -182,32 +182,33 @@ def create_table_if_not_exists(engine, table_name="player_season_averages"):
         team VARCHAR(10),
         pos VARCHAR(10),
         g DECIMAL(5,1),
-        fg DECIMAL(5,2),
-        fga DECIMAL(5,2),
+        fg DECIMAL(7,1),
+        fga DECIMAL(7,1),
         fg_pct DECIMAL(5,3),
-        ft DECIMAL(5,2),
-        fta DECIMAL(5,2),
+        ft DECIMAL(7,1),
+        fta DECIMAL(7,1),
         ft_pct DECIMAL(5,3),
-        ast DECIMAL(5,2),
-        pf DECIMAL(5,2),
-        pts DECIMAL(5,2),
+        ast DECIMAL(7,1),
+        pf DECIMAL(7,1),
+        pts DECIMAL(7,1),
         awards TEXT,
         season VARCHAR(10),
-        trb DECIMAL(5,2),
-        mp DECIMAL(5,2),
+        trb DECIMAL(7,1),
+        mp DECIMAL(7,1),
         gs DECIMAL(5,1),
-        orb DECIMAL(5,2),
-        drb DECIMAL(5,2),
-        stl DECIMAL(5,2),
-        blk DECIMAL(5,2),
-        tov DECIMAL(5,2),
-        three_p DECIMAL(5,2),
-        three_pa DECIMAL(5,2),
+        orb DECIMAL(7,1),
+        drb DECIMAL(7,1),
+        stl DECIMAL(7,1),
+        blk DECIMAL(7,1),
+        tov DECIMAL(7,1),
+        three_p DECIMAL(7,1),
+        three_pa DECIMAL(7,1),
         three_p_pct DECIMAL(5,3),
-        two_p DECIMAL(5,2),
-        two_pa DECIMAL(5,2),
+        two_p DECIMAL(7,1),
+        two_pa DECIMAL(7,1),
         two_p_pct DECIMAL(5,3),
         efg_pct DECIMAL(5,3),
+        trp_dbl INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     
@@ -229,7 +230,7 @@ def create_table_if_not_exists(engine, table_name="player_season_averages"):
 
 def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name="player_season_averages"):
     """
-    Fetch all NBA player per-game season averages using Basketball Reference Scraper.
+    Fetch all NBA player season totals using Basketball Reference Scraper.
     
     Args:
         start_year: First season end year to fetch (default: 1950)
@@ -238,7 +239,7 @@ def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name=
         table_name: Name of the database table (default: player_season_averages)
     
     Returns:
-        DataFrame with all fetched season averages
+        DataFrame with all fetched season totals
     """
     engine = None
     if save_to_db:
@@ -249,7 +250,7 @@ def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name=
         else:
             create_table_if_not_exists(engine, table_name)
     
-    print(f"\n🏀 NBA Season Averages Ingestion - Basketball Reference Scraper")
+    print(f"\n🏀 NBA Season Totals Ingestion - Basketball Reference Scraper")
     print(f"📅 Season range: {start_year-1}-{start_year} to {end_year-1}-{end_year}")
     print(f"📊 Total seasons: {end_year - start_year + 1}")
     if save_to_db:
@@ -265,8 +266,8 @@ def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name=
         try:
             print(f"📊 Fetching {year-1}-{year} season... ", end="", flush=True)
             
-            # Fetch per-game season stats from Basketball Reference
-            df = get_season_stats(season_end_year=year, data_format='PER_GAME')
+            # Fetch season totals from Basketball Reference
+            df = get_season_stats(season_end_year=year, data_format='TOTALS')
             
             if df is None or df.empty:
                 print(f"⚠️  No data returned for {year}")
@@ -288,7 +289,8 @@ def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name=
                                      .str.lower()
                                      .str.replace('%', '_pct')
                                      .str.replace('3p', 'three_p')
-                                     .str.replace('2p', 'two_p'))
+                                     .str.replace('2p', 'two_p')
+                                     .str.replace('-', '_'))
                     
                     # Insert with chunking to avoid too many parameters error
                     df_db.to_sql(
@@ -353,7 +355,7 @@ def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name=
 
 def main():
     """Main execution function."""
-    print("🏀 NBA Season Averages Ingestion Pipeline")
+    print("🏀 NBA Season Totals Ingestion Pipeline")
     print("📚 Using Basketball Reference Scraper")
     print(f"{'='*60}\n")
     

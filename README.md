@@ -1,10 +1,10 @@
 # 🏀 NBA Data Pipeline
 
-**Scrape all NBA player season averages from Basketball Reference** → PostgreSQL database
+**Scrape all NBA player season totals from Basketball Reference** → PostgreSQL database
 
 ## ✨ What it does
 
-- 🔍 **Fetches per-game season averages** for all NBA players (1950-present)
+- 🔍 **Fetches season totals** for all NBA players (1950-present)
 - 💾 **Saves directly to PostgreSQL** with proper schema and indexing
 - 🛡️ **Smart rate limiting** - respects Basketball Reference
 - 🔄 **Configurable** - easily adjust year ranges
@@ -20,17 +20,18 @@
 
 ## 📊 The Data
 
-Every player's per-game season averages: points, rebounds, assists, steals, blocks, FG%, 3PT%, FT%, and more. Season-level aggregates from 1947 to present day.
+Every player's season totals: total points, rebounds, assists, steals, blocks, FG%, 3PT%, FT%, and more. Season-level data from 1947 to present day.
 
 **Data includes:**
 - **Player ID** (unique Basketball Reference identifier - e.g., "jamesle01")
 - Player name, position, age, team
-- Games played (GP), games started (GS), minutes per game
+- Games played (GP), games started (GS), total minutes
 - Shooting stats (FG, FGA, FG%, 3P, 3PA, 3P%, 2P, 2PA, 2P%, eFG%)
 - Free throw stats (FT, FTA, FT%)
 - Rebounds (ORB, DRB, TRB)
 - Assists, steals, blocks, turnovers, personal fouls
-- Points per game
+- Total points
+- Triple-doubles
 
 ## ⏱️ Runtime
 
