@@ -90,26 +90,17 @@ def get_db_connection():
         print(f"❌ Error connecting to database: {e}")
         return None
 
-def get_season_stats(season_end_year, data_format='PER_GAME'):
+def get_season_stats(season_end_year):
     """
-    Scrape per-game season stats for all players from Basketball Reference.
+    Scrape season totals for all players from Basketball Reference.
     
     Args:
         season_end_year: The year the season ended (e.g., 2024 for 2023-24 season)
-        data_format: Type of stats ('PER_GAME', 'TOTALS', 'PER_36MIN', 'PER_100POSS', 'ADVANCED')
     
     Returns:
-        DataFrame with all players' stats for that season, including player_id
+        DataFrame with all players' season totals for that season, including player_id
     """
-    format_map = {
-        'PER_GAME': 'per_game',
-        'TOTALS': 'totals',
-        'PER_36MIN': 'per_minute',
-        'PER_100POSS': 'per_poss',
-        'ADVANCED': 'advanced'
-    }
-    
-    stat_type = format_map.get(data_format.upper(), 'per_game')
+    stat_type = 'totals'
     url = f'https://www.basketball-reference.com/leagues/NBA_{season_end_year}_{stat_type}.html'
     
     try:
@@ -130,10 +121,8 @@ def get_season_stats(season_end_year, data_format='PER_GAME'):
         player_rows = table.find('tbody').find_all('tr')
         
         for row in player_rows:
-            # Find player link in the row - try 'name_display' first (newer format), then 'player' (older format)
-            player_cell = row.find('td', {'data-stat': 'name_display'})
-            if not player_cell:
-                player_cell = row.find('td', {'data-stat': 'player'})
+            # Find player link in the row
+            player_cell = row.find('td', {'data-stat': 'player'})
             
             if player_cell and player_cell.find('a'):
                 href = player_cell.find('a').get('href', '')
@@ -171,7 +160,7 @@ def get_season_stats(season_end_year, data_format='PER_GAME'):
     except Exception as e:
         raise Exception(f"Error fetching data for {season_end_year}: {str(e)}")
 
-def create_table_if_not_exists(engine, table_name="player_season_averages"):
+def create_table_if_not_exists(engine, table_name="player_season_totals"):
     """Create the player season totals table if it doesn't exist."""
     create_table_sql = f"""
     CREATE TABLE IF NOT EXISTS nba.{table_name} (
@@ -228,7 +217,7 @@ def create_table_if_not_exists(engine, table_name="player_season_averages"):
         print(f"❌ Error creating table: {e}")
         return False
 
-def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name="player_season_averages"):
+def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name="player_season_totals"):
     """
     Fetch all NBA player season totals using Basketball Reference Scraper.
     
@@ -236,7 +225,7 @@ def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name=
         start_year: First season end year to fetch (default: 1950)
         end_year: Last season end year to fetch (default: 2025)
         save_to_db: Whether to save data to PostgreSQL (default: True)
-        table_name: Name of the database table (default: player_season_averages)
+        table_name: Name of the database table (default: player_season_totals)
     
     Returns:
         DataFrame with all fetched season totals
@@ -267,7 +256,7 @@ def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name=
             print(f"📊 Fetching {year-1}-{year} season... ", end="", flush=True)
             
             # Fetch season totals from Basketball Reference
-            df = get_season_stats(season_end_year=year, data_format='TOTALS')
+            df = get_season_stats(season_end_year=year)
             
             if df is None or df.empty:
                 print(f"⚠️  No data returned for {year}")
@@ -331,17 +320,9 @@ def get_all_seasons(start_year=1950, end_year=2025, save_to_db=True, table_name=
         if failed_seasons:
             print(f"❌ Failed seasons: {failed_seasons}")
         print(f"📊 Total records: {len(full_df):,}")
-        # Check for column name variations
-        player_col = next((col for col in ['Player', 'PLAYER'] if col in full_df.columns), None)
-        team_col = next((col for col in ['Tm', 'TM', 'Team'] if col in full_df.columns), None)
-        season_col = next((col for col in ['SEASON', 'Season'] if col in full_df.columns), None)
-        
-        if player_col:
-            print(f"👥 Unique players: {full_df[player_col].nunique():,}")
-        if team_col:
-            print(f"🏟️  Unique teams: {full_df[team_col].nunique()}")
-        if season_col:
-            print(f"📅 Seasons: {full_df[season_col].min()} to {full_df[season_col].max()}")
+        print(f"👥 Unique players: {full_df['Player'].nunique():,}")
+        print(f"🏟️  Unique teams: {full_df['Tm'].nunique()}")
+        print(f"📅 Seasons: {full_df['SEASON'].min()} to {full_df['SEASON'].max()}")
         
         if save_to_db:
             print(f"💾 Data saved to: nba.{table_name}")
@@ -363,7 +344,7 @@ def main():
     START_YEAR = 1950  # Change this to fetch different range (1950 is first available year)
     END_YEAR = 2025
     SAVE_TO_DB = True  # Save to PostgreSQL database
-    TABLE_NAME = "player_season_averages"
+    TABLE_NAME = "player_season_totals"
     
     # Fetch all seasons and save directly to database
     df = get_all_seasons(
